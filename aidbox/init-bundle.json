@@ -1,0 +1,76 @@
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Client",
+        "id": "fhirchatclient",
+        "secret": "fhirchatsecret",
+        "first_party": true,
+        "grant_types": [
+          "basic"
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "Client/fhirchatclient"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "AccessPolicy",
+        "id": "admin-seed-policy",
+        "engine": "allow",
+        "link": [
+          {
+            "reference": "Client/fhirchatclient"
+          }
+        ]
+      },
+      "request": {
+        "method": "PUT",
+        "url": "/AccessPolicy/admin-seed-policy"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "AccessPolicy",
+        "id": "allow-mcp-endpoints",
+        "link": [
+          {
+            "id": "mcp",
+            "resourceType": "Operation"
+          },
+          {
+            "id": "mcp-sse",
+            "resourceType": "Operation"
+          },
+          {
+            "id": "mcp-client-messages",
+            "resourceType": "Operation"
+          }
+        ],
+        "engine": "allow"
+      },
+      "request": {
+        "method": "PUT",
+        "url": "/AccessPolicy/allow-mcp-endpoints"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Organization",
+        "id": "fhirchat-dev",
+        "name": "Fhirside Chat Development Organization",
+        "meta": {
+          "versionId": "1"
+        }
+      },
+      "request": {
+        "method": "PUT",
+        "url": "/Organization/fhirchat-dev"
+      }
+    }
+  ]
+}
