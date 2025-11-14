@@ -49,11 +49,6 @@ def create_app() -> FastAPI:
         output = await chat_service.process(req.session_id, req.message)
         return ChatResponse(session_id=req.session_id, output=output)
 
-    # @app.post("/patient")
-    # async def patient(req: ChatRequest) -> Patient:  # noqa: D401 - FastAPI handler
-    #     output = await chat_service.process(req.session_id, req.message)
-    #     return output
-
     @app.websocket("/ws")
     async def ws_chat(websocket: WebSocket):
         await websocket.accept()

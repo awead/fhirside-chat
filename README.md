@@ -41,5 +41,4 @@ For telemetry information, visit [Jaeger](http://localhost:16686).
 
 ## Notes
 * In-memory sessions only; replace `ChatService` for persistence.
-* Extend `FhirChatAgent` to handle model switching or auth flows.
 * Ensure Aidbox healthcheck passes; SSE endpoint is `http://localhost:8080/sse`.
