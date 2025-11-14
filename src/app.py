@@ -1,9 +1,10 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+import logging
 from pydantic import BaseModel
 from typing import Dict, List
 
 
-from .ai.agents import chat_agent
+from .ai.agents import chat_agent, patient_history_agent
 
 
 class ChatRequest(BaseModel):
@@ -43,6 +44,10 @@ chat_service = ChatService()
 
 def create_app() -> FastAPI:
     app = FastAPI(title="FHIR Chat Agent")
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger("patient_history")
+
+    from src.models.clinical_history import PatientHistoryRequest, PatientClinicalHistory
 
     @app.post("/chat", response_model=ChatResponse)
     async def chat(req: ChatRequest):  # noqa: D401 - FastAPI handler
@@ -60,6 +65,29 @@ def create_app() -> FastAPI:
                 await websocket.send_text(output)
         except WebSocketDisconnect:
             return
+
+    @app.post("/patient", response_model=PatientClinicalHistory)
+    async def patient_history(req: PatientHistoryRequest):
+        """Generate clinical history for a patient.
+
+        Returns structured clinical data synthesized from FHIR resources.
+        Raises:
+            HTTPException: 404 if patient not found, 500 for internal failures.
+        """
+        # Build a minimal prompt; agent system prompt guides data gathering.
+        prompt = f"patient_id: {req.patient_id}"
+        try:
+            async with patient_history_agent() as agent:
+                result = await agent.run(prompt)
+                history = getattr(result, "data", None)  # expecting PatientClinicalHistory instance
+        except Exception as e:  # broad catch; refine if needed
+            logger.exception("patient_history_error", extra={"patient_id": str(req.patient_id)})
+            raise HTTPException(status_code=500, detail="Internal error generating patient history") from e
+        if not history:
+            logger.info("patient_history_not_found", extra={"patient_id": str(req.patient_id)})
+            raise HTTPException(status_code=404, detail="Patient not found or no data")
+        logger.info("patient_history_success", extra={"patient_id": str(req.patient_id)})
+        return history
 
     return app
 
