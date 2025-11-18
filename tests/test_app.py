@@ -42,12 +42,13 @@ def test_patient_endpoint_success(monkeypatch):
         async def run(self, prompt: str):
             class R:
                 def __init__(self):
-                    self.data = PatientClinicalHistory(
-                        patient_id=UUID("123e4567-e89b-12d3-a456-426614174000"),
-                        patient_name="Jane Doe",
-                        clinical_summary="Stable",
+                    self.output = PatientClinicalHistory(
+                        patient_id=UUID('123e4567-e89b-12d3-a456-426614174000'),
+                        patient_name='Jane Doe',
+                        clinical_summary='Stable',
                     )
             return R()
+
     monkeypatch.setattr(app_module, "patient_history_agent", lambda: StubCtx())
     resp = client.post("/patient", json={"patient_id": "123e4567-e89b-12d3-a456-426614174000"})
     assert resp.status_code == 200
@@ -65,7 +66,7 @@ def test_patient_endpoint_404(monkeypatch):
         async def run(self, prompt: str):
             class R:
                 def __init__(self):
-                    self.data = None
+                    self.output = None
             return R()
     monkeypatch.setattr(app_module, "patient_history_agent", lambda: StubCtx())
     resp = client.post("/patient", json={"patient_id": "123e4567-e89b-12d3-a456-426614174000"})

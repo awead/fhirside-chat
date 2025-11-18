@@ -27,6 +27,6 @@ def test_patient_history_agent(monkeypatch):
 
     agent = patient_history_agent()
     assert isinstance(agent, Agent)
-    assert agent.result_type.__name__ == "PatientClinicalHistory"
+    assert agent.output_type.__name__ == "PatientClinicalHistory"
     assert any(isinstance(ts, MCPServerSSE) for ts in agent.toolsets)
     assert isinstance(agent.instrument, InstrumentationSettings)

@@ -79,7 +79,7 @@ def create_app() -> FastAPI:
         try:
             async with patient_history_agent() as agent:
                 result = await agent.run(prompt)
-                history = getattr(result, "data", None)  # expecting PatientClinicalHistory instance
+                history = result.output
         except Exception as e:  # broad catch; refine if needed
             logger.exception("patient_history_error", extra={"patient_id": str(req.patient_id)})
             raise HTTPException(status_code=500, detail="Internal error generating patient history") from e
