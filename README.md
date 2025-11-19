@@ -39,7 +39,28 @@ curl -X POST http://localhost:8000/chat \
 
 For telemetry information, visit [Jaeger](http://localhost:16686).
 
+### Generate a Patient Clinical History
+
+Request:
+```bash
+curl -X POST http://localhost:8000/patient \
+  -H 'Content-Type: application/json' \
+  -d '{"patient_id":"<FHIR Patient UUID>"}'
+```
+
+Example response (truncated):
+```json
+{
+  "patient_id": "123e4567-e89b-12d3-a456-426614174000",
+  "patient_name": "Jane Doe",
+  "clinical_summary": "Patient with a history of hypertension and diabetes, currently stable.",
+  "key_conditions": ["Hypertension", "Type 2 Diabetes Mellitus"],
+  "active_medications": ["Lisinopril", "Metformin"],
+  "recent_encounters": ["2025-11-01: Routine follow-up", "2025-10-10: Lab work"],
+  "generated_at": "2025-11-14T20:00:00Z"
+}
+```
+
 ## Notes
 * In-memory sessions only; replace `ChatService` for persistence.
-* Extend `FhirChatAgent` to handle model switching or auth flows.
 * Ensure Aidbox healthcheck passes; SSE endpoint is `http://localhost:8080/sse`.
