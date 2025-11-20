@@ -1,5 +1,9 @@
 # FHIRside Chat Brownfield Enhancement Architecture
 
+**Status:** ✅ Complete
+**Completion Date:** 2025-11-17
+**Associated Story:** STORY-001 - Patient Clinical History Generation Endpoint
+
 ## Introduction
 
 This document outlines the architectural approach for enhancing FHIRside Chat with **automated patient clinical history generation**. Its primary goal is to serve as the guiding architectural blueprint for AI-driven development of the new `/patient` endpoint while ensuring seamless integration with the existing system.
