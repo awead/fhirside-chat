@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
@@ -21,6 +22,7 @@ from src.models.websocket_messages import (
     UserMessage,
 )
 from src.telemetry.jaeger_client import query_traces_by_session
+from src.telemetry.event_emitter import TelemetryEmitter
 from src.ai.telemetry import instrumentation
 from src.websocket.connection_manager import ConnectionManager
 
@@ -56,9 +58,25 @@ class ChatService:
             prompt = "\n".join(history) + "\nAssistant:"
 
             try:
+                await telemetry_emitter.emit_openai_call(
+                    session_id=session_id,
+                    event_type="openai_call",
+                    model="gpt-4",
+                )
+
+                start_time = time.time()
                 async with chat_agent() as agent:
                     result = await agent.run(prompt)
                     output = result.output
+                duration_ms = int((time.time() - start_time) * 1000)
+
+                await telemetry_emitter.emit_openai_call(
+                    session_id=session_id,
+                    event_type="openai_response",
+                    model="gpt-4",
+                    duration_ms=duration_ms,
+                )
+
             except Exception as e:  # probably shouldn't do this
                 output = f"Error: {e}"
 
@@ -68,6 +86,7 @@ class ChatService:
 
 chat_service = ChatService()
 connection_manager = ConnectionManager()
+telemetry_emitter = TelemetryEmitter(connection_manager)
 
 
 def create_app() -> FastAPI:

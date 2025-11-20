@@ -16,17 +16,28 @@ def test_websocket_valid_message():
         }
 
         websocket.send_text(json.dumps(test_message))
-        response = websocket.receive_text()
-        response_data = json.loads(response)
 
-        assert response_data["type"] == "assistant"
-        assert response_data["session_id"] == "test-123"
-        assert "content" in response_data
-        assert response_data["streaming"] is False
+        messages = []
+        for _ in range(3):
+            response = websocket.receive_text()
+            messages.append(json.loads(response))
 
-        print("\n✓ Valid message test passed")
+        openai_call = next(m for m in messages if m["type"] == "openai_call")
+        openai_response = next(m for m in messages if m["type"] == "openai_response")
+        assistant_msg = next(m for m in messages if m["type"] == "assistant")
+
+        assert openai_call["session_id"] == "test-123"
+        assert openai_response["session_id"] == "test-123"
+        assert "duration_ms" in openai_response
+
+        assert assistant_msg["session_id"] == "test-123"
+        assert "content" in assistant_msg
+        assert assistant_msg["streaming"] is False
+
+        print("\n✓ Valid message test passed (with telemetry)")
         print(f"  Request: {test_message}")
-        print(f"  Response: {response_data}")
+        print("  Telemetry events: openai_call, openai_response")
+        print(f"  Assistant response: {assistant_msg}")
 
 
 def test_websocket_invalid_json():
@@ -87,9 +98,9 @@ def test_websocket_multiple_sessions():
             assert response_a["session_id"] == "session-A"
             assert response_b["session_id"] == "session-B"
 
-            print("\n✓ Multiple sessions test passed")
-            print(f"  Session A isolated: {response_a['session_id']}")
-            print(f"  Session B isolated: {response_b['session_id']}")
+            print("\n✓ Multiple sessions test passed (sessions isolated)")
+            print(f"  Session A first event: {response_a['type']}")
+            print(f"  Session B first event: {response_b['type']}")
 
 
 if __name__ == "__main__":
