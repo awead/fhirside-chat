@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from opentelemetry import trace
 from pydantic import BaseModel
 from typing import Dict, List
@@ -59,6 +60,17 @@ def create_app() -> FastAPI:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger("patient_history")
     telemetry_logger = logging.getLogger("telemetry")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=[
+            "http://localhost:3000",
+            "http://localhost:5173",
+        ],
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["*"],
+    )
 
     @app.post("/chat", response_model=ChatResponse)
     async def chat(req: ChatRequest):  # noqa: D401 - FastAPI handler

@@ -61,6 +61,55 @@ Example response (truncated):
 }
 ```
 
+### Query Telemetry Data
+
+Retrieve OpenTelemetry trace data for a chat session:
+
+```bash
+curl http://localhost:8000/telemetry/abc
+```
+
+Example response:
+```json
+{
+  "session_id": "abc",
+  "spans": [
+    {
+      "span_id": "abc123",
+      "trace_id": "xyz789",
+      "operation_name": "openai.chat.completion",
+      "start_time": 1700000000000000000,
+      "end_time": 1700000001000000000,
+      "duration": 1000000000,
+      "attributes": {
+        "openai_prompt": "How many patients?",
+        "openai_model": "gpt-4o",
+        "session_id": "abc"
+      },
+      "status": "OK"
+    }
+  ],
+  "trace_count": 1
+}
+```
+
+**⚠️ Security Warning:** The telemetry endpoint exposes sensitive data including:
+- OpenAI prompts and completions
+- MCP FHIR queries and responses
+- Potentially PHI (Protected Health Information)
+
+**Current Configuration:**
+- CORS enabled for `localhost:3000` and `localhost:5173` (frontend dev servers)
+- **Development only** - No authentication
+- **Do not expose to production** without proper authentication and authorization
+- Consider filtering PHI from trace attributes before production deployment
+
+## API Documentation
+
+Interactive API documentation is available at:
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
+
 ## Notes
 * In-memory sessions only; replace `ChatService` for persistence.
 * Ensure Aidbox healthcheck passes; SSE endpoint is `http://localhost:8080/sse`.
