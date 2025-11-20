@@ -290,27 +290,27 @@ async def get_telemetry(session_id: str):
 **Estimated Time:** 1 hour
 
 #### Subtasks:
-- [ ] Modify `ChatService.process()` in `src/app.py`
-- [ ] Add session_id as span attribute using OpenTelemetry API
-- [ ] Update agent initialization to accept/propagate session_id context
-- [ ] Verify session_id appears in spans via manual Jaeger UI check
-- [ ] Update existing chat endpoint tests to verify no breakage
-- [ ] Document session_id propagation approach
+- [x] Modify `ChatService.process()` in `src/app.py`
+- [x] Add session_id as span attribute using OpenTelemetry API
+- [x] Update agent initialization to accept/propagate session_id context
+- [ ] Verify session_id appears in spans via manual Jaeger UI check (deferred to Task 6 E2E testing)
+- [x] Update existing chat endpoint tests to verify no breakage
+- [x] Document session_id propagation approach
 
 ### Task 4: Implement Telemetry API Endpoint
 **Estimated Time:** 1.5 hours
 
 #### Subtasks:
-- [ ] Add `GET /telemetry/{session_id}` endpoint to `src/app.py`
-- [ ] Import telemetry models and Jaeger client
-- [ ] Implement endpoint handler calling Jaeger client
-- [ ] Add error handling (422 for invalid input, 500 for failures)
-- [ ] Add logging with session_id context
-- [ ] Create `tests/test_telemetry_endpoint.py` (or add to `tests/test_app.py`)
-- [ ] Write integration tests mocking Jaeger client
-- [ ] Test success case (traces returned)
-- [ ] Test empty case (no traces found)
-- [ ] Test error case (Jaeger unavailable)
+- [x] Add `GET /telemetry/{session_id}` endpoint to `src/app.py`
+- [x] Import telemetry models and Jaeger client
+- [x] Implement endpoint handler calling Jaeger client
+- [x] Add error handling (422 for invalid input, 500 for failures)
+- [x] Add logging with session_id context
+- [x] Create `tests/test_telemetry_endpoint.py` (or add to `tests/test_app.py`)
+- [x] Write integration tests mocking Jaeger client
+- [x] Test success case (traces returned)
+- [x] Test empty case (no traces found)
+- [x] Test error case (Jaeger unavailable)
 
 ### Task 5: Add CORS Middleware
 **Estimated Time:** 30 minutes
@@ -398,9 +398,11 @@ Claude Sonnet 4.0
 - `src/telemetry/jaeger_client.py` - Jaeger Query API client
 - `tests/telemetry/__init__.py` - Telemetry tests module initialization
 - `tests/telemetry/test_jaeger_client.py` - Jaeger client tests (12 tests, all passing)
+- `tests/test_telemetry_endpoint.py` - Telemetry endpoint integration tests (4 tests, all passing)
 
 **Modified Files:**
 - `pyproject.toml` - Added httpx>=0.28.1 dependency
+- `src/app.py` - Added session_id span attribute in ChatService.process() + /telemetry endpoint
 
 ### Change Log
 
@@ -424,6 +426,28 @@ Claude Sonnet 4.0
 - Created test suite with 12 tests covering success, timeout, HTTP errors, and parsing
 - All tests passing, ruff linting passing
 
+#### 2025-11-20 - Task 3: Add Session ID to Spans
+- Modified `ChatService.process()` to get current OpenTelemetry span
+- Added `session_id` span attribute using `span.set_attribute()` before agent execution
+- Checks if span is recording before setting attribute (defensive coding)
+- No changes to agent initialization needed (already uses instrumentation)
+- All existing tests pass (6 tests in test_app.py)
+- Ruff linting passing
+- Manual Jaeger UI verification deferred to Task 6 E2E testing
+
+#### 2025-11-20 - Task 4: Implement Telemetry API Endpoint
+- Added `GET /telemetry/{session_id}` endpoint to `src/app.py`
+- Imported `TelemetryResponse` model and `query_traces_by_session` client
+- Created dedicated telemetry logger for endpoint logging
+- Implemented endpoint handler with trace_count calculation (unique trace IDs)
+- Added comprehensive error handling with 500 status for failures
+- Added structured logging with session_id, span_count, and trace_count
+- Gracefully returns empty list if Jaeger unavailable (via client error handling)
+- Created `tests/test_telemetry_endpoint.py` with 4 integration tests
+- Tests mock Jaeger client at source module level (before app creation)
+- Tests cover success, empty response, multiple traces, and error scenarios
+- All tests passing (4 new + 6 existing), ruff linting passing
+
 ### Completion Notes
 - Task 1 complete: Models implemented following existing patterns from clinical_history.py
 - Using Pydantic Field aliases for attribute names with dots (e.g., "openai.prompt")
@@ -431,3 +455,10 @@ Claude Sonnet 4.0
 - Task 2 complete: Jaeger client returns empty list on errors (graceful degradation)
 - Client filters spans to only include relevant operations (OpenAI, MCP, Aidbox)
 - Supports parent-child span relationships via CHILD_OF references
+- Task 3 complete: Session ID propagation approach uses `trace.get_current_span()` and `set_attribute()`
+- Minimal change to existing code (3 lines added to ChatService.process())
+- Session ID will propagate to all child spans created by agent execution
+- Task 4 complete: Telemetry endpoint follows existing FastAPI patterns
+- Endpoint returns 200 even with empty spans list (not 404)
+- Calculates trace_count by counting unique trace_ids in response
+- Testing pattern: patch at source module, import app inside test context

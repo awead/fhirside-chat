@@ -1,8 +1,16 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 import logging
+
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from opentelemetry import trace
 from pydantic import BaseModel
 from typing import Dict, List
 
+from src.models.clinical_history import (
+    PatientHistoryRequest,
+    PatientClinicalHistory,
+)
+from src.models.telemetry import TelemetryResponse
+from src.telemetry.jaeger_client import query_traces_by_session
 
 from .ai.agents import chat_agent, patient_history_agent
 
@@ -24,6 +32,10 @@ class ChatService:
         self._sessions: Dict[str, List[str]] = {}
 
     async def process(self, session_id: str, message: str) -> str:
+        span = trace.get_current_span()
+        if span.is_recording():
+            span.set_attribute("session_id", session_id)
+
         history = self._sessions.setdefault(session_id, [])
         history.append(f"User: {message}")
         prompt = "\n".join(history) + "\nAssistant:"
@@ -46,11 +58,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="FHIR Chat Agent")
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger("patient_history")
-
-    from src.models.clinical_history import (
-        PatientHistoryRequest,
-        PatientClinicalHistory,
-    )
+    telemetry_logger = logging.getLogger("telemetry")
 
     @app.post("/chat", response_model=ChatResponse)
     async def chat(req: ChatRequest):  # noqa: D401 - FastAPI handler
@@ -99,6 +107,46 @@ def create_app() -> FastAPI:
             "patient_history_success", extra={"patient_id": str(req.patient_id)}
         )
         return history
+
+    @app.get("/telemetry/{session_id}", response_model=TelemetryResponse)
+    async def get_telemetry(session_id: str):
+        """Retrieve OpenTelemetry trace data for a session.
+
+        Returns trace spans for OpenAI and MCP operations associated with the session.
+        Returns empty list if no traces found or Jaeger unavailable.
+
+        Raises:
+            HTTPException: 500 for internal failures.
+        """
+        telemetry_logger.info("telemetry_query", extra={"session_id": session_id})
+
+        try:
+            spans = await query_traces_by_session(session_id)
+
+            unique_trace_ids = set(span.trace_id for span in spans)
+            trace_count = len(unique_trace_ids)
+
+            telemetry_logger.info(
+                "telemetry_query_success",
+                extra={
+                    "session_id": session_id,
+                    "span_count": len(spans),
+                    "trace_count": trace_count,
+                },
+            )
+
+            return TelemetryResponse(
+                session_id=session_id, spans=spans, trace_count=trace_count
+            )
+
+        except Exception as e:
+            telemetry_logger.error(
+                "telemetry_query_error",
+                extra={"session_id": session_id, "error": str(e)},
+            )
+            raise HTTPException(
+                status_code=500, detail="Failed to retrieve telemetry data"
+            ) from e
 
     return app
 
