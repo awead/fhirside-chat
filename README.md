@@ -17,19 +17,62 @@ See `env-sample.txt`
 
 ## Usage
 
-Start services:
+### Prerequisites
+
+- **Backend:** Python 3.13+, `uv` package manager
+- **Frontend:** Node.js 18+ and npm
+- **Services:** Docker and Docker Compose
+
+### Quick Start
+
+1. **Start services:**
 
 ```bash
 docker compose up -d
 ```
 
-Start the API backend:
+2. **Start the API backend:**
 
 ```bash
 uv run uvicorn src:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Send a test chat message:
+3. **Start the frontend (in a new terminal):**
+
+```bash
+cd frontend
+npm install  # First time only
+npm run dev
+```
+
+4. **Open the chat interface:**
+
+Visit http://localhost:5173 in your browser
+
+### Frontend Development
+
+The frontend is a React + TypeScript application built with Vite.
+
+**Available scripts:**
+- `npm run dev` - Start development server (http://localhost:5173)
+- `npm run build` - Build for production (outputs to `frontend/dist/`)
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+
+**Features:**
+- Session management with localStorage persistence
+- Auto-scroll chat interface
+- Loading states and error handling
+- API proxy configured for seamless backend integration
+
+**Troubleshooting:**
+- **CORS errors:** Ensure backend is running and CORS is configured for localhost:5173
+- **Backend connection failed:** Check that the backend is running on port 8000
+- **Port 5173 in use:** Vite will auto-increment to 5174, or use `npm run dev -- --port 3000`
+
+### Backend API Testing
+
+Send a test chat message via curl:
 
 ```bash
 curl -X POST http://localhost:8000/chat \

@@ -1,3 +1,8 @@
 __pycache__
 aidbox.egg-info
 .coverage
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.vite
