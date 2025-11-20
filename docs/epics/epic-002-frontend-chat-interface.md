@@ -60,68 +60,125 @@ Provide users with an interactive web-based chat interface to communicate with t
 
 ## Stories
 
-### Story 1: Backend Telemetry API Endpoint
+This epic has been broken down into four detailed, properly-scoped stories for iterative development.
 
-Create a new FastAPI endpoint that exposes OpenTelemetry trace data for consumption by the front-end. This enables the UI to display real-time telemetry information.
+### Story 002: Backend Telemetry API Endpoint
 
-**Key Tasks:**
-- Design trace data export format (JSON schema for spans)
-- Implement `/telemetry/{session_id}` GET endpoint to retrieve traces
-- Query Jaeger backend or OpenTelemetry collector for trace data
-- Filter traces by session ID and timestamp
-- Add appropriate CORS headers for front-end access
-- Document endpoint in FastAPI OpenAPI schema
+**File:** `docs/stories/story-002-telemetry-api-endpoint.md`
+**Effort:** 3-5 Story Points (~7-8 hours)
+**Status:** Ready for Development
+**Dependencies:** None
 
-**Acceptance Criteria:**
-- Endpoint returns trace data for a given session ID
-- Response includes OpenAI calls and MCP queries
-- Response format is consumable by front-end (structured JSON)
-- No performance impact on `/chat` endpoint
+Create a FastAPI endpoint that exposes OpenTelemetry trace data for front-end consumption. Includes telemetry data models, Jaeger query integration, CORS configuration, and session ID instrumentation.
 
-### Story 2: Chat UI Component
+**Key Deliverables:**
+- `/telemetry/{session_id}` GET endpoint
+- Telemetry data models (TypeScript-compatible)
+- Jaeger Query API client
+- Session ID added to OpenTelemetry spans
+- CORS middleware for localhost origins
 
-Build a modern, responsive chat interface using React (or similar framework) that communicates with the existing `/chat` API endpoint.
+---
 
-**Key Tasks:**
-- Set up front-end build environment (Vite + React or Next.js)
-- Create chat UI components (message list, input field, send button)
-- Implement session ID generation and storage (localStorage)
-- Connect to `/chat` POST endpoint for message submission
-- Display conversation history with user/assistant message distinction
-- Add loading states and error handling
-- Style with TailwindCSS following modern design patterns
-- Serve front-end via FastAPI static file serving or separate dev server
+### Story 003: React Chat Foundation
 
-**Acceptance Criteria:**
-- Users can type messages and receive responses
-- Session persists across page reloads
-- Messages display with clear user/assistant distinction
-- Loading indicator shown while waiting for response
-- Error messages displayed for API failures
-- UI is responsive on desktop and tablet screen sizes
+**File:** `docs/stories/story-003-react-chat-foundation.md`
+**Effort:** 3-5 Story Points (~5-6 hours)
+**Status:** Ready for Development
+**Dependencies:** Story 002 (for CORS configuration)
 
-### Story 3: Telemetry Visualization Panel
+Set up Vite + React + TypeScript project with basic chat functionality. Minimal styling (no TailwindCSS yet). Focuses on functional chat with API integration and session management.
 
-Integrate a telemetry visualization panel into the chat interface that displays OpenAI and Aidbox traces for each message interaction.
+**Key Deliverables:**
+- Vite + React + TypeScript project structure
+- Basic chat UI components (functional, minimal styling)
+- Session management with localStorage
+- API integration with `/chat` endpoint
+- Message history management
+- Development workflow (npm scripts, hot reload)
 
-**Key Tasks:**
-- Create telemetry panel component adjacent to chat UI
-- Connect to `/telemetry/{session_id}` endpoint
-- Parse and display OpenAI span data (prompts, completions, token counts)
-- Parse and display MCP span data (FHIR queries, responses)
-- Implement collapsible/expandable trace details
-- Correlate traces with specific chat messages (by timestamp/span ID)
-- Add refresh/auto-refresh functionality for trace updates
-- Style trace data for readability (syntax highlighting, structured display)
+---
 
-**Acceptance Criteria:**
-- Telemetry panel displays traces for current session
-- OpenAI API calls visible with prompt and response content
-- Aidbox MCP queries visible with request/response details
-- Traces can be expanded/collapsed for detailed inspection
-- Panel updates when new messages are sent
-- Clear visual correlation between messages and their traces
-- Trace data formatted for developer readability
+### Story 004: Chat UI Enhancement
+
+**File:** `docs/stories/story-004-chat-ui-enhancement.md`
+**Effort:** 3-5 Story Points (~5-6 hours)
+**Status:** Ready for Development
+**Dependencies:** Story 003 (requires working chat UI)
+
+Add professional styling with TailwindCSS, shadcn/ui components, Lucide icons, responsive design, and accessibility enhancements. Configure production build with FastAPI static file serving.
+
+**Key Deliverables:**
+- TailwindCSS configuration and styling
+- shadcn/ui component integration
+- Lucide React icons
+- Responsive design (mobile/tablet/desktop)
+- WCAG AA accessibility compliance
+- Production build configuration
+- FastAPI StaticFiles mount
+
+---
+
+### Story 005: Telemetry Visualization Panel
+
+**File:** `docs/stories/story-005-telemetry-visualization-panel.md`
+**Effort:** 5-8 Story Points (~8-10 hours)
+**Status:** Ready for Development
+**Dependencies:** Stories 002 (API), 003 (Chat UI), 004 (Styling)
+
+Create developer-focused telemetry panel with syntax-highlighted span details, message-trace correlation, and multi-layer visual differentiation between OpenAI (purple) and MCP (blue) spans.
+
+**Key Deliverables:**
+- TelemetryPanel component (collapsible, responsive)
+- SpanList with visual differentiation (OpenAI purple, MCP blue)
+- SpanDetail with syntax highlighting and copy functionality
+- Message-trace correlation with filtering
+- Manual and auto-refresh controls
+- Mobile-responsive bottom drawer
+- Performance optimization (virtualization for 500+ spans)
+
+---
+
+## Design Artifacts
+
+Comprehensive design documentation has been created to guide implementation:
+
+### Tailwind Configuration (`docs/design/tailwind-config.md`)
+Complete design system with:
+- Custom color palette (OpenAI purple, MCP blue, semantic colors)
+- Typography scale and font families
+- Spacing system and responsive breakpoints
+- Animation keyframes
+- Usage examples and accessibility verification
+
+### Wireframes (`docs/design/wireframes.md`)
+ASCII wireframes for all layouts:
+- Desktop split view (chat + telemetry side panel)
+- Mobile layouts (chat-only and telemetry drawer)
+- Expanded span details
+- Message correlation states
+- Loading and error states
+- Component dimensions and specifications
+
+### Accessibility Checklist (`docs/design/accessibility-checklist.md`)
+WCAG 2.1 Level AA compliance guide:
+- Complete 4-principle checklist (Perceivable, Operable, Understandable, Robust)
+- ARIA patterns and examples
+- Screen reader testing guide
+- Color contrast specifications
+- Testing tools and resources
+- Mapped to Story 004 & 005 acceptance criteria
+
+### Component Library (`docs/design/component-library.md`)
+Complete component reference:
+- Component hierarchy and interfaces
+- TypeScript type definitions
+- shadcn/ui component list
+- Lucide React icon reference
+- Usage examples and patterns
+- Responsive behavior specifications
+- Animation guidelines
+- Testing examples
 
 ## Compatibility Requirements
 
@@ -157,16 +214,71 @@ Integrate a telemetry visualization panel into the chat interface that displays 
 
 ## Definition of Done
 
-- [x] `/telemetry` API endpoint implemented and tested
-- [x] Chat UI component functional with message send/receive
-- [x] Telemetry panel displays OpenAI and Aidbox traces
-- [x] All stories completed with acceptance criteria met
-- [x] Existing `/chat` endpoint verified through testing
-- [x] Front-end build process documented in README
-- [x] No regression in existing API functionality
-- [x] Manual testing with real OpenAI and Aidbox interactions completed
+**All Stories Complete:**
+- [ ] Story 002: Backend Telemetry API Endpoint (with all acceptance criteria met)
+- [ ] Story 003: React Chat Foundation (with all acceptance criteria met)
+- [ ] Story 004: Chat UI Enhancement (with all acceptance criteria met)
+- [ ] Story 005: Telemetry Visualization Panel (with all acceptance criteria met)
+
+**Functional Requirements:**
+- [ ] `/telemetry/{session_id}` API endpoint implemented and tested
+- [ ] Chat UI functional with message send/receive
+- [ ] Session management working (persists across reloads)
+- [ ] Telemetry panel displays OpenAI (purple) and MCP (blue) traces with clear visual distinction
+- [ ] Message-trace correlation working
+- [ ] Responsive design works on mobile, tablet, desktop
+
+**Quality Requirements:**
+- [ ] All existing tests pass (no regressions)
+- [ ] New tests achieve 80%+ coverage for new code
+- [ ] Existing `/chat` endpoint verified through testing
+- [ ] Existing `/patient` endpoint verified through testing
+- [ ] Lighthouse Accessibility score ≥ 90
+- [ ] axe DevTools reports 0 critical violations
+- [ ] No performance degradation on existing API
+
+**Documentation:**
+- [ ] README updated with front-end setup instructions
+- [ ] Front-end build process documented
+- [ ] Design artifacts available in `docs/design/`
+- [ ] Security considerations documented (telemetry data exposure)
+
+**Integration Testing:**
+- [ ] Manual E2E test with real OpenAI and Aidbox
+- [ ] Chat conversation works end-to-end
+- [ ] Telemetry traces visible for each message
+- [ ] Auto-refresh updates traces correctly
+- [ ] Mobile responsive layout tested on actual devices
 
 ## Handoff Notes
+
+### Story Details
+
+All stories have been created with comprehensive detail:
+- **Story 002:** Backend Telemetry API - 59 acceptance criteria, 6 tasks, ~7-8 hours
+- **Story 003:** React Chat Foundation - 82 acceptance criteria, 6 tasks, ~5-6 hours
+- **Story 004:** Chat UI Enhancement - 100 acceptance criteria, 8 tasks, ~5-6 hours
+- **Story 005:** Telemetry Visualization Panel - 115 acceptance criteria, 9 tasks, ~8-10 hours
+
+**Total Estimated Effort:** 25-30 hours across 4 stories
+
+### Design Artifacts
+
+Complete design system available in `docs/design/`:
+- **tailwind-config.md** - Full Tailwind config with custom theme (copy directly to project)
+- **wireframes.md** - ASCII wireframes for all screens and states
+- **accessibility-checklist.md** - WCAG 2.1 AA compliance verification (use during Stories 004 & 005)
+- **component-library.md** - Component reference with TypeScript interfaces and usage examples
+
+### Development Sequence
+
+**Recommended order:**
+1. **Story 002** (Backend) - Foundation for telemetry, no frontend dependencies
+2. **Story 003** (Chat Foundation) - Basic UI, functional but unstyled
+3. **Story 004** (UI Enhancement) - Polish Story 003 with TailwindCSS/shadcn/ui
+4. **Story 005** (Telemetry Panel) - Add developer telemetry visualization
+
+**Parallel option:** Stories 003 and 002 can be developed in parallel by different team members.
 
 ### Technical Context
 
@@ -179,22 +291,25 @@ Integrate a telemetry visualization panel into the chat interface that displays 
 **Key Integration Points:**
 - `/chat` endpoint: `POST` with `ChatRequest` model (`session_id`, `message`)
 - OpenTelemetry: Spans exported to Jaeger at localhost:4317
-- Trace data: May need to query Jaeger Query API or OpenTelemetry Collector
+- Trace data: Query Jaeger Query API at localhost:16686/api/traces
 
 **Critical Compatibility Requirements:**
 - Must not modify existing `ChatService` or `chat_agent()` behavior
-- CORS middleware needs to be added to `create_app()` for front-end access
-- Static file serving should use FastAPI's `StaticFiles` mount
+- CORS middleware added in Story 002 for front-end access (localhost origins)
+- Static file serving configured in Story 004 using FastAPI's `StaticFiles`
 - Session IDs must match between chat API and telemetry API
+- Visual differentiation CRITICAL: OpenAI (purple) vs MCP (blue) spans
 
-**Front-End Technology Recommendations:**
-- **Framework:** React with Vite (fast dev server, modern tooling)
-- **Styling:** TailwindCSS (utility-first, matches modern design patterns)
-- **Components:** shadcn/ui or Headless UI (accessible, pre-built components)
-- **Icons:** Lucide React (modern icon set)
-- **HTTP Client:** Fetch API or Axios for REST calls
+**Front-End Technology Stack (Confirmed):**
+- **Framework:** React 18+ with Vite 5+
+- **Language:** TypeScript (strict mode)
+- **Styling:** TailwindCSS 3+ with custom design tokens
+- **Components:** shadcn/ui (Button, Card, Input, ScrollArea, Sheet)
+- **Icons:** Lucide React (Brain, Database, Send, etc.)
+- **HTTP Client:** Fetch API (native, no axios)
+- **Syntax Highlighting:** react-syntax-highlighter (for telemetry JSON)
 
-Each story must include verification that existing `/chat` functionality remains intact.
+Each story includes verification that existing `/chat` functionality remains intact.
 
 ## Success Metrics
 
