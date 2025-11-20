@@ -399,10 +399,14 @@ Claude Sonnet 4.0
 - `tests/telemetry/__init__.py` - Telemetry tests module initialization
 - `tests/telemetry/test_jaeger_client.py` - Jaeger client tests (12 tests, all passing)
 - `tests/test_telemetry_endpoint.py` - Telemetry endpoint integration tests (4 tests, all passing)
+- `tests/e2e/__init__.py` - E2E tests module initialization
+- `tests/e2e/test_telemetry_e2e.py` - End-to-end telemetry tests (3 tests, all passing)
+- `tests/e2e/README.md` - E2E test documentation and usage guide
 
 **Modified Files:**
-- `pyproject.toml` - Added httpx>=0.28.1 dependency
-- `src/app.py` - Added session_id span attribute + /telemetry endpoint + CORS middleware
+- `pyproject.toml` - Added httpx>=0.28.1, opentelemetry-instrumentation-fastapi>=0.59b0
+- `src/app.py` - Added session_id span attribute + /telemetry endpoint + CORS middleware + FastAPI instrumentation + tracer initialization
+- `src/telemetry/jaeger_client.py` - Extended span filter to include PydanticAI operations
 - `README.md` - Added telemetry endpoint documentation and security warnings
 
 ### Change Log
@@ -466,9 +470,41 @@ Claude Sonnet 4.0
 - Documented CORS configuration (localhost:3000, localhost:5173)
 - Added warning: development only, no authentication, not for production
 - Added API documentation links (Swagger UI, ReDoc)
-- All tests verified passing (37 tests)
+- All tests verified passing (37 unit/integration tests)
 - No regressions in existing endpoints
-- Manual E2E testing documented for user (requires running services)
+- **Created comprehensive E2E test suite:**
+  - `tests/e2e/test_telemetry_e2e.py` with 3 automated E2E tests
+  - `test_telemetry_end_to_end`: Full workflow verification (10 steps)
+  - `test_telemetry_multiple_sessions`: Session isolation verification
+  - `test_telemetry_empty_session`: Graceful handling of nonexistent sessions
+  - Complete E2E test documentation in `tests/e2e/README.md`
+  - All E2E tests passing (~29 seconds total runtime)
+
+#### 2025-11-20 - E2E Testing Revealed Issues - Fixed
+**Issue #1: FastAPI Not Instrumented**
+- Added `opentelemetry-instrumentation-fastapi` package
+- Imported and applied `FastAPIInstrumentor.instrument_app(app)`
+- Creates parent spans for HTTP requests
+
+**Issue #2: Session ID Not in Spans**
+- Created explicit `chat_session` wrapper span in `ChatService.process()`
+- Sets `session_id` attribute that propagates through trace context
+- Links FastAPI spans with PydanticAI agent spans
+
+**Issue #3: Span Filter Too Restrictive**
+- Extended `_is_relevant_span()` to include PydanticAI operations
+- Now captures: `chat_session`, `agent run`, `chat gpt-*`, `running tools`
+- Previously only captured `openai.*` and `mcp.*` prefixes
+
+**Issue #4: Tracer Not Initialized**
+- Called `instrumentation()` at module level in `src/app.py`
+- Ensures TracerProvider configured before any spans created
+
+**Verification:**
+- Manual E2E test confirmed working
+- Automated E2E test suite passing (3/3 tests)
+- All unit tests still passing (37/37 tests)
+- Total: 40 tests passing
 
 ### Completion Notes
 - Task 1 complete: Models implemented following existing patterns from clinical_history.py

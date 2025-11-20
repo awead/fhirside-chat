@@ -3,6 +3,7 @@ import logging
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from opentelemetry import trace
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from pydantic import BaseModel
 from typing import Dict, List
 
@@ -12,8 +13,11 @@ from src.models.clinical_history import (
 )
 from src.models.telemetry import TelemetryResponse
 from src.telemetry.jaeger_client import query_traces_by_session
+from src.ai.telemetry import instrumentation
 
 from .ai.agents import chat_agent, patient_history_agent
+
+instrumentation()
 
 
 class ChatRequest(BaseModel):
@@ -33,23 +37,24 @@ class ChatService:
         self._sessions: Dict[str, List[str]] = {}
 
     async def process(self, session_id: str, message: str) -> str:
-        span = trace.get_current_span()
-        if span.is_recording():
-            span.set_attribute("session_id", session_id)
+        tracer = trace.get_tracer(__name__)
 
-        history = self._sessions.setdefault(session_id, [])
-        history.append(f"User: {message}")
-        prompt = "\n".join(history) + "\nAssistant:"
+        with tracer.start_as_current_span(
+            "chat_session", attributes={"session_id": session_id}
+        ):
+            history = self._sessions.setdefault(session_id, [])
+            history.append(f"User: {message}")
+            prompt = "\n".join(history) + "\nAssistant:"
 
-        try:
-            async with chat_agent() as agent:
-                result = await agent.run(prompt)
-                output = result.output
-        except Exception as e:  # probably shouldn't do this
-            output = f"Error: {e}"
+            try:
+                async with chat_agent() as agent:
+                    result = await agent.run(prompt)
+                    output = result.output
+            except Exception as e:  # probably shouldn't do this
+                output = f"Error: {e}"
 
-        history.append(f"Assistant: {output}")
-        return output
+            history.append(f"Assistant: {output}")
+            return output
 
 
 chat_service = ChatService()
@@ -164,3 +169,4 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+FastAPIInstrumentor.instrument_app(app)

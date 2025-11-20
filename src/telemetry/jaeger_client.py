@@ -98,7 +98,7 @@ def _parse_jaeger_response(jaeger_data: dict, session_id: str) -> List[SpanData]
 
 
 def _is_relevant_span(jaeger_span: dict) -> bool:
-    """Check if span is relevant (OpenAI or MCP operation).
+    """Check if span is relevant (OpenAI, MCP, or agent operation).
 
     Args:
         jaeger_span: Jaeger span object.
@@ -111,9 +111,15 @@ def _is_relevant_span(jaeger_span: dict) -> bool:
     return (
         operation_name.startswith("openai.")
         or operation_name.startswith("mcp.")
+        or operation_name.startswith("chat ")
+        or operation_name.startswith("agent ")
         or "OpenAI" in operation_name
         or "MCP" in operation_name
         or "Aidbox" in operation_name
+        or "gpt" in operation_name.lower()
+        or operation_name == "chat_session"
+        or operation_name == "running tool"
+        or operation_name == "running tools"
     )
 
 
