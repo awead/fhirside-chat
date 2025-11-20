@@ -528,14 +528,38 @@ Claude Sonnet 4.0
 - Manual E2E testing steps documented for verification with running services
 
 ### Story Complete
-**All 6 tasks completed successfully:**
+**All 6 tasks completed successfully + E2E test suite:**
 1. ✅ Telemetry data models (3 Pydantic models, 8 tests)
 2. ✅ Jaeger Query API client (async query function, 12 tests)
-3. ✅ Session ID instrumentation (OpenTelemetry span attributes)
+3. ✅ Session ID instrumentation (OpenTelemetry span attributes with wrapper span)
 4. ✅ Telemetry API endpoint (GET /telemetry/{session_id}, 4 tests)
 5. ✅ CORS middleware (localhost dev origins)
-6. ✅ Documentation and testing (README updated, 37 tests passing)
+6. ✅ Documentation and testing (README + E2E test guide)
+7. ✅ **E2E test suite** (3 automated tests, comprehensive workflow verification)
 
-**Final Test Results:** 37 tests passing, 0 failures
-**Code Quality:** Ruff linting passing, no violations
+**Final Test Results:** 40 tests passing, 0 failures
+- Unit/Integration Tests: 37 passing
+- End-to-End Tests: 3 passing (~29 seconds runtime)
+
+**Code Quality:** Ruff linting passing, formatted, no violations
 **Ready for:** Frontend development (Stories 003-005)
+
+### Key Learnings from E2E Testing
+
+**Critical Discoveries:**
+1. **FastAPI instrumentation was missing** - Added `opentelemetry-instrumentation-fastapi` for HTTP span creation
+2. **Session ID wasn't propagating** - Created explicit `chat_session` wrapper span to link traces
+3. **Span filter too restrictive** - Extended filter to capture PydanticAI operations (agent run, chat gpt-*)
+4. **Tracer not initialized at startup** - Called `instrumentation()` at module level for proper setup
+
+**Deliverables:**
+- `tests/e2e/test_telemetry_e2e.py` - 3 comprehensive E2E tests
+- `tests/e2e/README.md` - Complete E2E testing guide with troubleshooting
+- Full workflow verification: chat → trace export → telemetry query → validation
+- Session isolation testing and edge case coverage
+
+**Impact:**
+- Automated regression testing for future development
+- CI/CD ready test suite
+- Living documentation of expected behavior
+- Confidence in full-stack integration
