@@ -1,3 +1,4 @@
+import json
 import logging
 from pathlib import Path
 
@@ -6,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing import Dict, List
 
 from src.models.clinical_history import (
@@ -14,8 +15,14 @@ from src.models.clinical_history import (
     PatientClinicalHistory,
 )
 from src.models.telemetry import TelemetryResponse
+from src.models.websocket_messages import (
+    AssistantMessage,
+    ErrorMessage,
+    UserMessage,
+)
 from src.telemetry.jaeger_client import query_traces_by_session
 from src.ai.telemetry import instrumentation
+from src.websocket.connection_manager import ConnectionManager
 
 from .ai.agents import chat_agent, patient_history_agent
 
@@ -60,6 +67,7 @@ class ChatService:
 
 
 chat_service = ChatService()
+connection_manager = ConnectionManager()
 
 
 def create_app() -> FastAPI:
@@ -86,15 +94,41 @@ def create_app() -> FastAPI:
 
     @app.websocket("/ws")
     async def ws_chat(websocket: WebSocket):
-        await websocket.accept()
         session_id = websocket.query_params.get("session_id", "default")
+        await connection_manager.connect(websocket, session_id)
+
         try:
             while True:
-                msg = await websocket.receive_text()
-                output = await chat_service.process(session_id, msg)
-                await websocket.send_text(output)
+                raw_message = await websocket.receive_text()
+
+                try:
+                    message_data = json.loads(raw_message)
+                    user_message = UserMessage(**message_data)
+
+                    if user_message.type == "message":
+                        output = await chat_service.process(
+                            user_message.session_id, user_message.content
+                        )
+                        response = AssistantMessage(
+                            type="assistant",
+                            session_id=user_message.session_id,
+                            content=output,
+                            streaming=False,
+                        )
+                        await connection_manager.send_message(
+                            user_message.session_id, response
+                        )
+
+                except (json.JSONDecodeError, ValidationError) as e:
+                    error_response = ErrorMessage(
+                        type="error",
+                        session_id=session_id,
+                        error=f"Invalid message format: {str(e)}",
+                    )
+                    await connection_manager.send_message(session_id, error_response)
+
         except WebSocketDisconnect:
-            return
+            await connection_manager.disconnect(session_id)
 
     @app.post("/patient", response_model=PatientClinicalHistory)
     async def patient_history(req: PatientHistoryRequest):
