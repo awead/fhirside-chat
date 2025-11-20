@@ -47,7 +47,10 @@ def create_app() -> FastAPI:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger("patient_history")
 
-    from src.models.clinical_history import PatientHistoryRequest, PatientClinicalHistory
+    from src.models.clinical_history import (
+        PatientHistoryRequest,
+        PatientClinicalHistory,
+    )
 
     @app.post("/chat", response_model=ChatResponse)
     async def chat(req: ChatRequest):  # noqa: D401 - FastAPI handler
@@ -81,12 +84,20 @@ def create_app() -> FastAPI:
                 result = await agent.run(prompt)
                 history = result.output
         except Exception as e:  # broad catch; refine if needed
-            logger.exception("patient_history_error", extra={"patient_id": str(req.patient_id)})
-            raise HTTPException(status_code=500, detail="Internal error generating patient history") from e
+            logger.exception(
+                "patient_history_error", extra={"patient_id": str(req.patient_id)}
+            )
+            raise HTTPException(
+                status_code=500, detail="Internal error generating patient history"
+            ) from e
         if not history:
-            logger.info("patient_history_not_found", extra={"patient_id": str(req.patient_id)})
+            logger.info(
+                "patient_history_not_found", extra={"patient_id": str(req.patient_id)}
+            )
             raise HTTPException(status_code=404, detail="Patient not found or no data")
-        logger.info("patient_history_success", extra={"patient_id": str(req.patient_id)})
+        logger.info(
+            "patient_history_success", extra={"patient_id": str(req.patient_id)}
+        )
         return history
 
     return app

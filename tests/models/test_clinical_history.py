@@ -7,7 +7,9 @@ from src.models.clinical_history import PatientHistoryRequest, PatientClinicalHi
 
 
 def test_patient_history_request_valid_uuid():
-    model = PatientHistoryRequest(patient_id=UUID("123e4567-e89b-12d3-a456-426614174000"))
+    model = PatientHistoryRequest(
+        patient_id=UUID("123e4567-e89b-12d3-a456-426614174000")
+    )
     assert str(model.patient_id) == "123e4567-e89b-12d3-a456-426614174000"
 
 

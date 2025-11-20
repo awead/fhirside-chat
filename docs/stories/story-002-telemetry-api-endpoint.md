@@ -260,31 +260,31 @@ async def get_telemetry(session_id: str):
 **Estimated Time:** 1 hour
 
 #### Subtasks:
-- [ ] Create `src/models/telemetry.py`
-- [ ] Implement `TelemetryRequest` model (session_id field)
-- [ ] Implement `SpanData` model (span_id, trace_id, operation_name, timestamps, attributes, status)
-- [ ] Implement `TelemetryResponse` model (session_id, spans: List[SpanData], trace_count)
-- [ ] Add proper type hints and Field descriptions
-- [ ] Create `tests/models/test_telemetry.py`
-- [ ] Write unit tests for model validation and serialization
-- [ ] Run tests and verify pass
-- [ ] Run ruff linting
+- [x] Create `src/models/telemetry.py`
+- [x] Implement `TelemetryRequest` model (session_id field)
+- [x] Implement `SpanData` model (span_id, trace_id, operation_name, timestamps, attributes, status)
+- [x] Implement `TelemetryResponse` model (session_id, spans: List[SpanData], trace_count)
+- [x] Add proper type hints and Field descriptions
+- [x] Create `tests/models/test_telemetry.py`
+- [x] Write unit tests for model validation and serialization
+- [x] Run tests and verify pass
+- [x] Run ruff linting
 
 ### Task 2: Implement Jaeger Query Client
 **Estimated Time:** 2 hours
 
 #### Subtasks:
-- [ ] Create `src/telemetry/jaeger_client.py` (new directory)
-- [ ] Implement `async def query_traces_by_session(session_id: str) -> List[SpanData]`
-- [ ] Use `httpx.AsyncClient` for Jaeger Query API HTTP calls
-- [ ] Parse Jaeger JSON response format
-- [ ] Filter spans by operation name (include OpenAI and MCP spans)
-- [ ] Extract relevant span attributes (prompts, responses, queries)
-- [ ] Add error handling and logging
-- [ ] Add connection timeout (5 seconds)
-- [ ] Create `tests/telemetry/test_jaeger_client.py`
-- [ ] Write unit tests mocking Jaeger API responses
-- [ ] Test error scenarios (timeout, API unavailable)
+- [x] Create `src/telemetry/jaeger_client.py` (new directory)
+- [x] Implement `async def query_traces_by_session(session_id: str) -> List[SpanData]`
+- [x] Use `httpx.AsyncClient` for Jaeger Query API HTTP calls
+- [x] Parse Jaeger JSON response format
+- [x] Filter spans by operation name (include OpenAI and MCP spans)
+- [x] Extract relevant span attributes (prompts, responses, queries)
+- [x] Add error handling and logging
+- [x] Add connection timeout (5 seconds)
+- [x] Create `tests/telemetry/test_jaeger_client.py`
+- [x] Write unit tests mocking Jaeger API responses
+- [x] Test error scenarios (timeout, API unavailable)
 
 ### Task 3: Add Session ID to Spans
 **Estimated Time:** 1 hour
@@ -381,3 +381,53 @@ async def get_telemetry(session_id: str):
 - CORS headers allow front-end requests from localhost dev servers
 - Zero impact on existing endpoint performance
 - All tests pass with 80%+ coverage for new code
+
+---
+
+## Dev Agent Record
+
+### Agent Model Used
+Claude Sonnet 4.0
+
+### File List
+
+**New Files:**
+- `src/models/telemetry.py` - Telemetry data models (SpanAttributes, SpanData, TelemetryResponse)
+- `tests/models/test_telemetry.py` - Telemetry model tests (8 tests, all passing)
+- `src/telemetry/__init__.py` - Telemetry module initialization
+- `src/telemetry/jaeger_client.py` - Jaeger Query API client
+- `tests/telemetry/__init__.py` - Telemetry tests module initialization
+- `tests/telemetry/test_jaeger_client.py` - Jaeger client tests (12 tests, all passing)
+
+**Modified Files:**
+- `pyproject.toml` - Added httpx>=0.28.1 dependency
+
+### Change Log
+
+#### 2025-11-20 - Task 1: Create Telemetry Data Models
+- Created `src/models/telemetry.py` with 3 Pydantic models
+- Created `SpanAttributes` model with OpenAI and MCP attribute fields
+- Created `SpanData` model with span metadata and timing
+- Created `TelemetryResponse` model for API response
+- Created comprehensive test suite with 8 tests covering validation and serialization
+- All tests passing, ruff linting passing
+
+#### 2025-11-20 - Task 2: Implement Jaeger Query Client
+- Added httpx>=0.28.1 dependency to pyproject.toml
+- Created `src/telemetry/` module with Jaeger Query API client
+- Implemented `query_traces_by_session()` async function with 5-second timeout
+- Implemented Jaeger JSON response parsing with `_parse_jaeger_response()`
+- Implemented span filtering with `_is_relevant_span()` (OpenAI, MCP, Aidbox operations)
+- Implemented span conversion with `_convert_jaeger_span()` mapping to SpanData model
+- Added comprehensive error handling for timeouts, HTTP errors, and parsing failures
+- Added structured logging with session_id context
+- Created test suite with 12 tests covering success, timeout, HTTP errors, and parsing
+- All tests passing, ruff linting passing
+
+### Completion Notes
+- Task 1 complete: Models implemented following existing patterns from clinical_history.py
+- Using Pydantic Field aliases for attribute names with dots (e.g., "openai.prompt")
+- Models include examples in model_config for OpenAPI schema generation
+- Task 2 complete: Jaeger client returns empty list on errors (graceful degradation)
+- Client filters spans to only include relevant operations (OpenAI, MCP, Aidbox)
+- Supports parent-child span relationships via CHILD_OF references

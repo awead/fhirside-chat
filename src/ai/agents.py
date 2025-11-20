@@ -55,6 +55,6 @@ def patient_history_agent() -> Agent[PatientClinicalHistory]:
         toolsets=[mcp_server],
         instrument=instrumentation(),
         system_prompt=system_prompt,
-        output_type=PatientClinicalHistory
+        output_type=PatientClinicalHistory,
     )
     return agent
