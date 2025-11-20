@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import type { FormEvent, KeyboardEvent } from 'react';
+import { Button } from '@/components/ui/button';
+import { Send, Loader2 } from 'lucide-react';
 
 interface MessageInputProps {
   onSendMessage: (message: string) => void;
   disabled?: boolean;
 }
 
-export function MessageInput({ onSendMessage, disabled = false }: MessageInputProps) {
+export function MessageInput({
+  onSendMessage,
+  disabled = false,
+}: MessageInputProps) {
   const [input, setInput] = useState('');
 
   const handleSubmit = (e: FormEvent) => {
@@ -25,15 +30,8 @@ export function MessageInput({ onSendMessage, disabled = false }: MessageInputPr
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      style={{
-        padding: '20px',
-        borderTop: '1px solid #dee2e6',
-        backgroundColor: 'white',
-      }}
-    >
-      <div style={{ display: 'flex', gap: '12px' }}>
+    <form onSubmit={handleSubmit} className="p-6 border-t bg-background">
+      <div className="flex gap-3">
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -41,34 +39,24 @@ export function MessageInput({ onSendMessage, disabled = false }: MessageInputPr
           placeholder="Type your message... (Enter to send, Shift+Enter for new line)"
           disabled={disabled}
           rows={3}
-          style={{
-            flex: 1,
-            padding: '12px',
-            borderRadius: '8px',
-            border: '1px solid #ced4da',
-            fontSize: '14px',
-            fontFamily: 'inherit',
-            resize: 'vertical',
-            minHeight: '48px',
-          }}
+          className="flex-1 resize-y min-h-[60px] rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         />
-        <button
+        <Button
           type="submit"
           disabled={!input.trim() || disabled}
-          style={{
-            padding: '12px 24px',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: disabled || !input.trim() ? '#ced4da' : '#007bff',
-            color: 'white',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: disabled || !input.trim() ? 'not-allowed' : 'pointer',
-            transition: 'background-color 0.2s',
-          }}
+          size="lg"
+          className="h-auto"
+          aria-label="Send message"
         >
-          {disabled ? 'Sending...' : 'Send'}
-        </button>
+          {disabled ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              <Send className="h-4 w-4 mr-2" />
+              Send
+            </>
+          )}
+        </Button>
       </div>
     </form>
   );

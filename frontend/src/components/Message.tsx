@@ -1,4 +1,6 @@
 import type { Message as MessageType } from '../types/chat';
+import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 interface MessageProps {
   message: MessageType;
@@ -23,36 +25,18 @@ export function Message({ message }: MessageProps) {
   const isUser = message.role === 'user';
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: isUser ? 'flex-end' : 'flex-start',
-        marginBottom: '12px',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '70%',
-          padding: '12px 16px',
-          borderRadius: '12px',
-          backgroundColor: isUser ? '#007bff' : '#e9ecef',
-          color: isUser ? 'white' : '#212529',
-        }}
+    <div className={cn('flex flex-col mb-3', isUser ? 'items-end' : 'items-start')}>
+      <Card
+        className={cn(
+          'max-w-[80%] p-4',
+          isUser
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-muted text-foreground'
+        )}
       >
-        <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-          {message.content}
-        </div>
-      </div>
-      <div
-        style={{
-          fontSize: '11px',
-          color: '#6c757d',
-          marginTop: '4px',
-          paddingLeft: '8px',
-          paddingRight: '8px',
-        }}
-      >
+        <div className="whitespace-pre-wrap break-words">{message.content}</div>
+      </Card>
+      <div className="text-xs text-muted-foreground mt-1 px-2">
         {formatTimestamp(message.timestamp)}
       </div>
     </div>

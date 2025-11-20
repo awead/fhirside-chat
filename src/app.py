@@ -1,7 +1,9 @@
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from pydantic import BaseModel
@@ -164,6 +166,14 @@ def create_app() -> FastAPI:
             raise HTTPException(
                 status_code=500, detail="Failed to retrieve telemetry data"
             ) from e
+
+    frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+    if frontend_dist.exists() and frontend_dist.is_dir():
+        app.mount(
+            "/",
+            StaticFiles(directory=str(frontend_dist), html=True),
+            name="frontend",
+        )
 
     return app
 

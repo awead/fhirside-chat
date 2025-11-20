@@ -70,6 +70,34 @@ The frontend is a React + TypeScript application built with Vite.
 - **Backend connection failed:** Check that the backend is running on port 8000
 - **Port 5173 in use:** Vite will auto-increment to 5174, or use `npm run dev -- --port 3000`
 
+### Production Build
+
+To build and serve the frontend from the FastAPI backend:
+
+1. **Build the frontend:**
+
+```bash
+cd frontend
+npm run build
+```
+
+This creates optimized static files in `frontend/dist/`.
+
+2. **Start the backend:**
+
+```bash
+uv run uvicorn src:app --host 0.0.0.0 --port 8000
+```
+
+3. **Access the application:**
+
+Visit http://localhost:8000 in your browser. The backend automatically serves the frontend if `frontend/dist/` exists.
+
+**Notes:**
+- API routes (`/chat`, `/telemetry`, `/patient`) take precedence over static files
+- The frontend uses client-side routing with SPA fallback
+- Bundle sizes: CSS ~12KB, JS ~250KB (gzipped: ~3KB CSS, ~79KB JS)
+
 ### Backend API Testing
 
 Send a test chat message via curl:

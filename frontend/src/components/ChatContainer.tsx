@@ -3,6 +3,8 @@ import type { Message } from '../types/chat';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { getOrCreateSessionId, createNewSession } from '../utils/session';
+import { Button } from '@/components/ui/button';
+import { RotateCcw, AlertCircle } from 'lucide-react';
 
 interface ChatContainerProps {
   onSendMessage: (sessionId: string, message: string) => Promise<void>;
@@ -59,61 +61,29 @@ export function ChatContainer({
     handleNewSession,
     addAssistantMessage,
     renderUI: () => (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100vh',
-          backgroundColor: '#f8f9fa',
-        }}
-      >
-        <div
-          style={{
-            padding: '16px 20px',
-            backgroundColor: 'white',
-            borderBottom: '1px solid #dee2e6',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
+      <div className="flex flex-col h-screen bg-background">
+        <header className="px-6 py-4 bg-card border-b flex justify-between items-center">
           <div>
-            <h1 style={{ margin: 0, fontSize: '20px', fontWeight: '600' }}>
-              FHIRside Chat
-            </h1>
-            <div style={{ fontSize: '12px', color: '#6c757d', marginTop: '4px' }}>
+            <h1 className="text-xl font-semibold">FHIRside Chat</h1>
+            <div className="text-xs text-muted-foreground mt-1">
               Session: {sessionId.substring(0, 8)}...
             </div>
           </div>
-          <button
+          <Button
+            variant="outline"
             onClick={handleNewSession}
             disabled={isLoading}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '6px',
-              border: '1px solid #ced4da',
-              backgroundColor: 'white',
-              color: '#495057',
-              fontSize: '14px',
-              fontWeight: '500',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
-            }}
+            aria-label="Start new session"
           >
+            <RotateCcw className="h-4 w-4 mr-2" />
             New Session
-          </button>
-        </div>
+          </Button>
+        </header>
 
         {error && (
-          <div
-            style={{
-              padding: '12px 20px',
-              backgroundColor: '#f8d7da',
-              color: '#721c24',
-              borderBottom: '1px solid #f5c6cb',
-              fontSize: '14px',
-            }}
-          >
-            ⚠️ {error}
+          <div className="px-6 py-3 bg-destructive/10 text-destructive border-b text-sm flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
