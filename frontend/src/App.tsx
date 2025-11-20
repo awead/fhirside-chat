@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChatContainer } from './components/ChatContainer';
+import { TelemetryPanel } from './components/telemetry/TelemetryPanel';
 import { sendMessage, ChatApiError } from './services/chatApi';
 
 function App() {
@@ -29,7 +30,15 @@ function App() {
     error,
   });
 
-  return chatContainer.renderUI();
+  return (
+    <div className="flex h-screen">
+      <div className="flex-1 min-w-0">{chatContainer.renderUI()}</div>
+      <TelemetryPanel
+        sessionId={chatContainer.sessionId}
+        className="w-96 border-l h-full overflow-hidden"
+      />
+    </div>
+  );
 }
 
 export default App;

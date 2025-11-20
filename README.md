@@ -64,6 +64,10 @@ The frontend is a React + TypeScript application built with Vite.
 - Auto-scroll chat interface
 - Loading states and error handling
 - API proxy configured for seamless backend integration
+- Real-time telemetry panel showing OpenAI and MCP/Aidbox traces
+- Auto-refresh telemetry (5-second intervals)
+- Syntax highlighting for JSON payloads
+- Copy-to-clipboard for prompts and responses
 
 **Troubleshooting:**
 - **CORS errors:** Ensure backend is running and CORS is configured for localhost:5173
