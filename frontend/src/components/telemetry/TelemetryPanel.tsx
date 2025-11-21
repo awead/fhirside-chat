@@ -1,96 +1,58 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp, Activity, RefreshCw, Play, Pause } from 'lucide-react';
+import { ChevronDown, ChevronUp, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { SpanData } from '@/types/telemetry';
-import { fetchTelemetry, TelemetryApiError } from '@/services/telemetryApi';
-import { SpanList } from './SpanList';
+import type { TelemetryEvent } from '@/types/websocket';
 
 interface TelemetryPanelProps {
-  sessionId: string;
+  telemetryEvents: TelemetryEvent[];
   className?: string;
 }
 
 const STORAGE_KEY_COLLAPSED = 'telemetry-panel-collapsed';
-const STORAGE_KEY_AUTO_REFRESH = 'telemetry-auto-refresh';
-const STORAGE_KEY_INTERVAL = 'telemetry-refresh-interval';
 
-export function TelemetryPanel({ sessionId, className }: TelemetryPanelProps) {
+export function TelemetryPanel({ telemetryEvents, className }: TelemetryPanelProps) {
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const stored = localStorage.getItem(STORAGE_KEY_COLLAPSED);
     return stored === 'true';
   });
-  const [spans, setSpans] = useState<SpanData[]>([]);
-  const [traceCount, setTraceCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(() => {
-    const stored = localStorage.getItem(STORAGE_KEY_AUTO_REFRESH);
-    return stored === 'true';
-  });
-  const [refreshInterval] = useState(() => {
-    const stored = localStorage.getItem(STORAGE_KEY_INTERVAL);
-    return stored ? parseInt(stored, 10) : 5000;
-  });
-
-  const loadTelemetry = useCallback(async () => {
-    if (!sessionId) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const data = await fetchTelemetry(sessionId);
-      setSpans(data.spans);
-      setTraceCount(data.trace_count);
-      setLastUpdated(new Date());
-    } catch (err) {
-      if (err instanceof TelemetryApiError) {
-        if (err.status === 404) {
-          setError('No telemetry data found for this session');
-        } else {
-          setError(`Failed to load telemetry: ${err.message}`);
-        }
-      } else {
-        setError('An unexpected error occurred');
-      }
-      setSpans([]);
-      setTraceCount(0);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [sessionId]);
-
-  useEffect(() => {
-    loadTelemetry();
-  }, [loadTelemetry]);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_COLLAPSED, String(isCollapsed));
   }, [isCollapsed]);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_AUTO_REFRESH, String(autoRefresh));
-  }, [autoRefresh]);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_INTERVAL, String(refreshInterval));
-  }, [refreshInterval]);
-
-  useEffect(() => {
-    if (!autoRefresh || isCollapsed) return;
-
-    const intervalId = setInterval(() => {
-      loadTelemetry();
-    }, refreshInterval);
-
-    return () => clearInterval(intervalId);
-  }, [autoRefresh, isCollapsed, refreshInterval, loadTelemetry]);
+    if (panelRef.current && !isCollapsed) {
+      panelRef.current.scrollTop = panelRef.current.scrollHeight;
+    }
+  }, [telemetryEvents, isCollapsed]);
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
+  };
+
+  const getEventColor = (event: TelemetryEvent): string => {
+    if (event.type === 'openai_call' || event.type === 'openai_response') {
+      return 'text-purple-600 bg-purple-50';
+    }
+    return 'text-blue-600 bg-blue-50';
+  };
+
+  const getEventLabel = (event: TelemetryEvent): string => {
+    switch (event.type) {
+      case 'tool_call':
+        return `Tool Call: ${event.tool_name}`;
+      case 'tool_result':
+        return `Tool Result: ${event.tool_name} (${event.duration_ms}ms)`;
+      case 'openai_call':
+        return `OpenAI Call: ${event.model}`;
+      case 'openai_response':
+        return `OpenAI Response: ${event.model} (${event.duration_ms}ms)`;
+      default:
+        return 'Unknown Event';
+    }
   };
 
   return (
@@ -99,77 +61,56 @@ export function TelemetryPanel({ sessionId, className }: TelemetryPanelProps) {
         <div className="flex items-center gap-3">
           <Activity className="h-5 w-5 text-muted-foreground" />
           <div>
-            <h2 className="text-lg font-semibold">Telemetry</h2>
+            <h2 className="text-lg font-semibold">Real-Time Telemetry</h2>
             <p className="text-xs text-muted-foreground">
-              {traceCount} {traceCount === 1 ? 'trace' : 'traces'} · {spans.length}{' '}
-              {spans.length === 1 ? 'span' : 'spans'}
-              {lastUpdated && (
-                <> · Updated {lastUpdated.toLocaleTimeString()}</>
-              )}
+              {telemetryEvents.length} {telemetryEvents.length === 1 ? 'event' : 'events'}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={autoRefresh ? "default" : "ghost"}
-            size="icon"
-            onClick={() => setAutoRefresh(!autoRefresh)}
-            aria-label={autoRefresh ? 'Disable auto-refresh' : 'Enable auto-refresh'}
-            title={autoRefresh ? `Auto-refreshing every ${refreshInterval / 1000}s` : 'Enable auto-refresh'}
-          >
-            {autoRefresh ? (
-              <Pause className="h-4 w-4" />
-            ) : (
-              <Play className="h-4 w-4" />
-            )}
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={loadTelemetry}
-            disabled={isLoading}
-            aria-label="Refresh telemetry"
-          >
-            <RefreshCw className={cn('h-4 w-4', isLoading && 'animate-spin')} />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleCollapse}
-            aria-label={isCollapsed ? 'Expand telemetry panel' : 'Collapse telemetry panel'}
-          >
-            {isCollapsed ? (
-              <ChevronUp className="h-4 w-4" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleCollapse}
+          aria-label={isCollapsed ? 'Expand telemetry panel' : 'Collapse telemetry panel'}
+        >
+          {isCollapsed ? (
+            <ChevronUp className="h-4 w-4" />
+          ) : (
+            <ChevronDown className="h-4 w-4" />
+          )}
+        </Button>
       </div>
 
       {!isCollapsed && (
-        <div className="flex-1 overflow-auto">
-          {error && (
-            <div className="p-4 text-sm text-destructive bg-destructive/10 border-b">
-              {error}
-            </div>
-          )}
-
-          {!isLoading && !error && spans.length === 0 && (
+        <div ref={panelRef} className="flex-1 overflow-auto p-4">
+          {telemetryEvents.length === 0 && (
             <div className="flex flex-col items-center justify-center p-12 text-center">
               <Activity className="h-12 w-12 text-muted-foreground/50 mb-4" />
               <p className="text-sm text-muted-foreground">
-                No traces available for this session
+                No telemetry events yet
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                Send a message to generate telemetry data
+                Send a message to see real-time telemetry
               </p>
             </div>
           )}
 
-          {spans.length > 0 && (
-            <div className="p-4">
-              <SpanList spans={spans} />
+          {telemetryEvents.length > 0 && (
+            <div className="space-y-2">
+              {telemetryEvents.map((event, idx) => (
+                <div
+                  key={idx}
+                  className={cn(
+                    'p-3 rounded-lg border text-sm',
+                    getEventColor(event)
+                  )}
+                >
+                  <div className="font-medium">{getEventLabel(event)}</div>
+                  <div className="text-xs mt-1 opacity-75">
+                    {new Date(event.timestamp).toLocaleTimeString()}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
