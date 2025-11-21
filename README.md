@@ -60,14 +60,13 @@ The frontend is a React + TypeScript application built with Vite.
 - `npm run lint` - Run ESLint
 
 **Features:**
+- Real-time WebSocket chat communication
 - Session management with localStorage persistence
 - Auto-scroll chat interface
+- Streaming message support with typewriter effect
+- Real-time telemetry panel showing OpenAI and MCP/Aidbox traces (<100ms latency)
+- Connection status indicator with auto-reconnection
 - Loading states and error handling
-- API proxy configured for seamless backend integration
-- Real-time telemetry panel showing OpenAI and MCP/Aidbox traces
-- Auto-refresh telemetry (5-second intervals)
-- Syntax highlighting for JSON payloads
-- Copy-to-clipboard for prompts and responses
 
 **Troubleshooting:**
 - **CORS errors:** Ensure backend is running and CORS is configured for localhost:5173
@@ -98,21 +97,87 @@ uv run uvicorn src:app --host 0.0.0.0 --port 8000
 Visit http://localhost:8000 in your browser. The backend automatically serves the frontend if `frontend/dist/` exists.
 
 **Notes:**
-- API routes (`/chat`, `/telemetry`, `/patient`) take precedence over static files
+- API routes (`/ws`, `/patient`) take precedence over static files
 - The frontend uses client-side routing with SPA fallback
 - Bundle sizes: CSS ~12KB, JS ~250KB (gzipped: ~3KB CSS, ~79KB JS)
 
-### Backend API Testing
+### WebSocket API
 
-Send a test chat message via curl:
+The chat interface uses WebSocket for real-time bidirectional communication.
 
-```bash
-curl -X POST http://localhost:8000/chat \
-  -H 'Content-Type: application/json' \
-  -d '{"session_id":"abc","message":"How many patients are in the system?"}'
+**Connection URL:**
+```
+ws://localhost:8000/ws?session_id=<your-session-id>
 ```
 
-For telemetry information, visit [Jaeger](http://localhost:16686).
+**Message Format:**
+
+All messages are JSON with a `type` field for routing.
+
+**Client → Server (UserMessage):**
+```json
+{
+  "type": "message",
+  "session_id": "your-session-id",
+  "content": "What is quintin cole's diagnosis?"
+}
+```
+
+**Server → Client:**
+
+*Assistant Response:*
+```json
+{
+  "type": "assistant",
+  "session_id": "your-session-id",
+  "content": "Based on the clinical data...",
+  "streaming": false
+}
+```
+
+*OpenAI Call Event:*
+```json
+{
+  "type": "openai_call",
+  "session_id": "your-session-id",
+  "model": "gpt-4",
+  "timestamp": "2025-11-20T22:00:00Z"
+}
+```
+
+*OpenAI Response Event:*
+```json
+{
+  "type": "openai_response",
+  "session_id": "your-session-id",
+  "model": "gpt-4",
+  "duration_ms": 1234,
+  "prompt_tokens": 150,
+  "completion_tokens": 50,
+  "total_tokens": 200,
+  "timestamp": "2025-11-20T22:00:01Z"
+}
+```
+
+*Error Message:*
+```json
+{
+  "type": "error",
+  "session_id": "your-session-id",
+  "error": "Invalid message format"
+}
+```
+
+**Testing with wscat:**
+```bash
+npm install -g wscat
+wscat -c "ws://localhost:8000/ws?session_id=test123"
+> {"type": "message", "session_id": "test123", "content": "Hello"}
+```
+
+**Telemetry:**
+- Real-time events appear in WebSocket stream (<100ms latency)
+- Historical telemetry available in [Jaeger UI](http://localhost:16686)
 
 ### Generate a Patient Clinical History
 
@@ -136,48 +201,16 @@ Example response (truncated):
 }
 ```
 
-### Query Telemetry Data
-
-Retrieve OpenTelemetry trace data for a chat session:
-
-```bash
-curl http://localhost:8000/telemetry/abc
-```
-
-Example response:
-```json
-{
-  "session_id": "abc",
-  "spans": [
-    {
-      "span_id": "abc123",
-      "trace_id": "xyz789",
-      "operation_name": "openai.chat.completion",
-      "start_time": 1700000000000000000,
-      "end_time": 1700000001000000000,
-      "duration": 1000000000,
-      "attributes": {
-        "openai_prompt": "How many patients?",
-        "openai_model": "gpt-4o",
-        "session_id": "abc"
-      },
-      "status": "OK"
-    }
-  ],
-  "trace_count": 1
-}
-```
-
-**⚠️ Security Warning:** The telemetry endpoint exposes sensitive data including:
+**⚠️ Security Warning:** WebSocket telemetry events may contain sensitive data including:
 - OpenAI prompts and completions
 - MCP FHIR queries and responses
 - Potentially PHI (Protected Health Information)
 
 **Current Configuration:**
+- WebSocket connections accept any session_id (no authentication)
 - CORS enabled for `localhost:3000` and `localhost:5173` (frontend dev servers)
-- **Development only** - No authentication
-- **Do not expose to production** without proper authentication and authorization
-- Consider filtering PHI from trace attributes before production deployment
+- **Development only** - No authentication or encryption
+- **Production requirements:** Use `wss://` (TLS), implement JWT authentication, add rate limiting, filter PHI from telemetry
 
 ## API Documentation
 

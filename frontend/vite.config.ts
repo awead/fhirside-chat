@@ -16,6 +16,10 @@ export default defineConfig({
       '/chat': 'http://localhost:8000',
       '/telemetry': 'http://localhost:8000',
       '/patient': 'http://localhost:8000',
+      '/ws': {
+        target: 'ws://localhost:8000',
+        ws: true,
+      },
     },
   },
 })
