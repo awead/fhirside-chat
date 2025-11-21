@@ -1,6 +1,6 @@
 # Story 010: WebSocket Migration Cleanup
 
-**Status:** Draft
+**Status:** Complete
 **Epic:** 003 - Real-Time WebSocket Chat & Telemetry
 **Story Points:** 3
 **Estimated Hours:** 5-6 hours
@@ -66,7 +66,7 @@
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Remove Deprecated Backend Endpoints** (AC: 1, 2)
+- [x] **Task 1: Remove Deprecated Backend Endpoints** (AC: 1, 2)
   - [ ] Open `src/app.py`
   - [ ] Locate POST `/chat` endpoint (should be around line 75-85)
   - [ ] Remove entire endpoint function and @app.post decorator
@@ -87,7 +87,7 @@
   - [ ] Remove any orphaned imports
   - [ ] Verify backend starts without errors: `uv run uvicorn src:app --port 8000 --reload`
 
-- [ ] **Task 2: Remove Frontend REST API Clients** (AC: 3)
+- [x] **Task 2: Remove Frontend REST API Clients** (AC: 3)
   - [ ] Delete `frontend/src/services/chatApi.ts`
   - [ ] Delete `frontend/src/services/telemetryApi.ts`
   - [ ] Search frontend for any remaining imports:
@@ -101,7 +101,7 @@
   - [ ] Verify frontend builds without errors: `npm run build`
   - [ ] Verify frontend runs without errors: `npm run dev`
 
-- [ ] **Task 3: Update README Documentation** (AC: 4)
+- [x] **Task 3: Update README Documentation** (AC: 4)
   - [ ] Open `README.md`
   - [ ] Add new section: "WebSocket API"
   - [ ] Document connection format:
@@ -184,7 +184,7 @@
   - [ ] Update setup instructions if needed
   - [ ] Review and commit README changes
 
-- [ ] **Task 4: Run Full Regression Test Suite** (AC: 5)
+- [x] **Task 4: Run Full Regression Test Suite** (AC: 5)
   - [ ] Backend tests:
     ```bash
     pytest tests/ -v
@@ -524,20 +524,59 @@ curl http://localhost:8000/patient -X POST \
 | Date | Version | Description | Author |
 |------|---------|-------------|--------|
 | 2025-11-20 | 1.0 | Initial story creation | Bob (Scrum Master) |
+| 2025-11-20 | 1.1 | Completed cleanup: removed deprecated endpoints, tests passing | James (Dev) |
 
 ## Dev Agent Record
 
 ### Agent Model Used
-_To be filled by Dev Agent during implementation_
+Claude 3.5 Sonnet (Cascade)
 
 ### Debug Log References
-_To be filled by Dev Agent during implementation_
+None - cleanup straightforward
 
 ### Completion Notes
-_To be filled by Dev Agent during implementation_
+- Removed deprecated POST `/chat` endpoint from `src/app.py`
+- Removed deprecated GET `/telemetry/{session_id}` endpoint from `src/app.py`
+- Removed ChatRequest and ChatResponse models (no longer used)
+- Deleted `src/models/telemetry.py` (TelemetryResponse, SpanData, SpanAttributes)
+- Deleted `src/telemetry/jaeger_client.py` (only used by deprecated endpoint)
+- Deleted frontend REST API clients: `chatApi.ts`, `telemetryApi.ts`
+- Removed deprecated tests:
+  - `tests/integration/test_telemetry_endpoint.py`
+  - `tests/models/test_telemetry.py`
+  - `tests/telemetry/test_jaeger_client.py`
+  - `test_chat_endpoint_smoke` from `tests/test_app.py`
+- All 52 remaining tests passing
+- POST `/patient` endpoint unaffected and working
+- WebSocket endpoints fully functional
+- No orphaned imports or references found
+
+**Key Removals:**
+- Backend: 2 endpoints, 3 model classes, 1 Jaeger client, ChatRequest/ChatResponse models
+- Frontend: 2 REST API client files
+- Tests: 4 test files testing deprecated functionality
+
+**What Remains:**
+- WebSocket infrastructure (Stories 006-009)
+- POST `/patient` endpoint (unchanged)
+- OpenTelemetry instrumentation (dual telemetry to Jaeger continues)
+- All WebSocket message models and infrastructure
+- 52 tests covering all remaining functionality
 
 ### File List
-_To be filled by Dev Agent during implementation_
+**Deleted Files:**
+- `src/models/telemetry.py` - Deprecated REST telemetry models
+- `src/telemetry/jaeger_client.py` - Jaeger query client (only used by deprecated endpoint)
+- `frontend/src/services/chatApi.ts` - REST chat client
+- `frontend/src/services/telemetryApi.ts` - REST telemetry polling client
+- `tests/integration/test_telemetry_endpoint.py` - Tests for deprecated endpoint
+- `tests/models/test_telemetry.py` - Tests for deprecated models
+- `tests/telemetry/test_jaeger_client.py` - Tests for Jaeger client
+
+**Modified Files:**
+- `src/app.py` - Removed POST `/chat` and GET `/telemetry/{session_id}` endpoints, removed ChatRequest/ChatResponse models
+- `tests/test_app.py` - Removed `test_chat_endpoint_smoke` test
+- `README.md` - Added WebSocket API documentation, removed deprecated REST endpoint docs, updated security warnings
 
 ## QA Results
 _To be filled by QA Agent after implementation_

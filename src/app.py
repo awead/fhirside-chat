@@ -8,20 +8,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from opentelemetry import trace
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 from typing import Dict, List
 
 from src.models.clinical_history import (
     PatientHistoryRequest,
     PatientClinicalHistory,
 )
-from src.models.telemetry import TelemetryResponse
 from src.models.websocket_messages import (
     AssistantMessage,
     ErrorMessage,
     UserMessage,
 )
-from src.telemetry.jaeger_client import query_traces_by_session
 from src.telemetry.event_emitter import TelemetryEmitter
 from src.ai.telemetry import instrumentation
 from src.websocket.connection_manager import ConnectionManager
@@ -29,16 +27,6 @@ from src.websocket.connection_manager import ConnectionManager
 from .ai.agents import chat_agent, patient_history_agent
 
 instrumentation()
-
-
-class ChatRequest(BaseModel):
-    session_id: str
-    message: str
-
-
-class ChatResponse(BaseModel):
-    session_id: str
-    output: str
 
 
 class ChatService:
@@ -93,7 +81,6 @@ def create_app() -> FastAPI:
     app = FastAPI(title="FHIR Chat Agent")
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger("patient_history")
-    telemetry_logger = logging.getLogger("telemetry")
 
     app.add_middleware(
         CORSMiddleware,
@@ -105,11 +92,6 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "OPTIONS"],
         allow_headers=["*"],
     )
-
-    @app.post("/chat", response_model=ChatResponse)
-    async def chat(req: ChatRequest):  # noqa: D401 - FastAPI handler
-        output = await chat_service.process(req.session_id, req.message)
-        return ChatResponse(session_id=req.session_id, output=output)
 
     @app.websocket("/ws")
     async def ws_chat(websocket: WebSocket):
@@ -179,46 +161,6 @@ def create_app() -> FastAPI:
             "patient_history_success", extra={"patient_id": str(req.patient_id)}
         )
         return history
-
-    @app.get("/telemetry/{session_id}", response_model=TelemetryResponse)
-    async def get_telemetry(session_id: str):
-        """Retrieve OpenTelemetry trace data for a session.
-
-        Returns trace spans for OpenAI and MCP operations associated with the session.
-        Returns empty list if no traces found or Jaeger unavailable.
-
-        Raises:
-            HTTPException: 500 for internal failures.
-        """
-        telemetry_logger.info("telemetry_query", extra={"session_id": session_id})
-
-        try:
-            spans = await query_traces_by_session(session_id)
-
-            unique_trace_ids = set(span.trace_id for span in spans)
-            trace_count = len(unique_trace_ids)
-
-            telemetry_logger.info(
-                "telemetry_query_success",
-                extra={
-                    "session_id": session_id,
-                    "span_count": len(spans),
-                    "trace_count": trace_count,
-                },
-            )
-
-            return TelemetryResponse(
-                session_id=session_id, spans=spans, trace_count=trace_count
-            )
-
-        except Exception as e:
-            telemetry_logger.error(
-                "telemetry_query_error",
-                extra={"session_id": session_id, "error": str(e)},
-            )
-            raise HTTPException(
-                status_code=500, detail="Failed to retrieve telemetry data"
-            ) from e
 
     frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
     if frontend_dist.exists() and frontend_dist.is_dir():

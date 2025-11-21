@@ -23,14 +23,6 @@ app = app_module.create_app()
 client = TestClient(app)
 
 
-def test_chat_endpoint_smoke():
-    resp = client.post("/chat", json={"session_id": "t1", "message": "Hello"})
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["session_id"] == "t1"
-    assert "output" in body
-
-
 def test_patient_endpoint_422_invalid_uuid():
     resp = client.post("/patient", json={"patient_id": "bad-uuid"})
     assert resp.status_code == 422
